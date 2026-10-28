@@ -46,7 +46,21 @@
   const params = new URLSearchParams();
   if (guardado.get('yo')) params.set('yo', guardado.get('yo'));
   if (guardado.get('clave')) params.set('k', guardado.get('clave'));
-  document.getElementById('app').src = APP + (params.toString() ? '?' + params : '');
+  const marco = document.getElementById('app');
+  marco.src = APP + (params.toString() ? '?' + params : '');
+
+  // En el iPhone, abierta desde la pantalla de inicio, "100%" no incluye la barra de estado y la app
+  // quedaría más corta que la pantalla (menú flotando y contenido cortado abajo). Ahí se usa la
+  // altura real de la pantalla.
+  function ajustarAlto() {
+    if (!navigator.standalone) { marco.style.height = ''; return; }
+    const horizontal = matchMedia('(orientation: landscape)').matches;
+    const alto = horizontal ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
+    marco.style.height = Math.max(alto, window.innerHeight) + 'px';
+  }
+  ajustarAlto();
+  window.addEventListener('resize', ajustarAlto);
+  window.addEventListener('orientationchange', () => setTimeout(ajustarAlto, 300));
 
   // La app avisa cuando eliges persona o escribes la clave. Solo se aceptan avisos de la app de Google.
   window.addEventListener('message', e => {
