@@ -60,9 +60,30 @@
     if (!host.endsWith('.googleusercontent.com')) return;
     const d = e.data || {};
     if (d.app !== 'gastos') return;
+    if (d.medidas) { mostrarDiagnostico(d.medidas); return; }
     guardado.set('yo', d.yo || '');
     guardado.set('clave', d.clave || '');
   });
+
+  // Modo diagnóstico (?diag=1): muestra las medidas de la pantalla para ajustar el diseño en el iPhone.
+  function mostrarDiagnostico(app) {
+    if (enlace.get('diag') !== '1') return;
+    let caja = document.getElementById('diag');
+    if (!caja) {
+      caja = document.createElement('pre');
+      caja.id = 'diag';
+      caja.style.cssText = 'position:fixed;left:8px;right:8px;top:45%;margin:0;padding:10px;z-index:9;pointer-events:none;' +
+        'background:rgba(200,0,0,.88);color:#fff;font:12px/1.4 ui-monospace,monospace;border-radius:10px;white-space:pre-wrap';
+      document.body.appendChild(caja);
+    }
+    const r = marco.getBoundingClientRect();
+    caja.textContent =
+      'PUENTE  alto=' + window.innerHeight + ' ancho=' + window.innerWidth + ' pantalla=' + screen.width + 'x' + screen.height +
+      ' app-inicio=' + (navigator.standalone ? 'sí' : 'no') + '\n' +
+      'MARCO   arriba=' + Math.round(r.top) + ' alto=' + Math.round(r.height) + '\n' +
+      'APP     ' + JSON.stringify(app);
+  }
+  if (enlace.get('diag') === '1') window.addEventListener('load', () => mostrarDiagnostico({ esperando: 'medidas de la app…' }));
 </script>
 </body>
 </html>
