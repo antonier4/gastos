@@ -11,18 +11,21 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Gastos">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- Barra de estado con su propio fondo: la app empieza debajo de la hora y ocupa justo el resto
+     de la pantalla. (En modo transparente el iPhone calcula mal el alto de la página.) -->
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#f4f4f2" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <style>
   :root { --bg: #f4f4f2; --muted: #85847e; }
   @media (prefers-color-scheme: dark) { :root { --bg: #000000; --muted: #8e8e93; } }
-  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
-  body { font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
-  /* La app ocupa toda la pantalla. El iPhone ya le pasa los márgenes de la barra de estado y de
-     la barra inferior, y la app los respeta sola; si el puente los sumara, quedarían duplicados. */
-  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
-  .cargando { position: fixed; inset: 0; display: grid; place-items: center; }
+  /* La página de fondo queda fija: solo se desplaza el contenido de la app. */
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; overscroll-behavior: none; }
+  body { position: fixed; inset: 0; font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+  /* La app ocupa toda la pantalla y respeta sola la barra inferior del iPhone. */
+  iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: var(--bg); }
+  .cargando { position: absolute; inset: 0; display: grid; place-items: center; }
+  .cargando[hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -47,20 +50,8 @@
   if (guardado.get('yo')) params.set('yo', guardado.get('yo'));
   if (guardado.get('clave')) params.set('k', guardado.get('clave'));
   const marco = document.getElementById('app');
+  marco.onload = () => { document.querySelector('.cargando').hidden = true; };
   marco.src = APP + (params.toString() ? '?' + params : '');
-
-  // En el iPhone, abierta desde la pantalla de inicio, "100%" no incluye la barra de estado y la app
-  // quedaría más corta que la pantalla (menú flotando y contenido cortado abajo). Ahí se usa la
-  // altura real de la pantalla.
-  function ajustarAlto() {
-    if (!navigator.standalone) { marco.style.height = ''; return; }
-    const horizontal = matchMedia('(orientation: landscape)').matches;
-    const alto = horizontal ? Math.min(screen.width, screen.height) : Math.max(screen.width, screen.height);
-    marco.style.height = Math.max(alto, window.innerHeight) + 'px';
-  }
-  ajustarAlto();
-  window.addEventListener('resize', ajustarAlto);
-  window.addEventListener('orientationchange', () => setTimeout(ajustarAlto, 300));
 
   // La app avisa cuando eliges persona o escribes la clave. Solo se aceptan avisos de la app de Google.
   window.addEventListener('message', e => {
