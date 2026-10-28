@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gastos</title>
+<!-- Ícono y modo "app" al añadirla a la pantalla de inicio -->
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icono-512.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gastos">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#f4f4f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<style>
+  :root { --bg: #f4f4f2; --muted: #85847e; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #000000; --muted: #8e8e93; } }
+  html, body { margin: 0; height: 100%; background: var(--bg); overflow: hidden; }
+  body { font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: var(--muted); }
+  /* La app ocupa toda la pantalla, respetando la barra de estado y la barra inferior del iPhone. */
+  iframe {
+    position: fixed; border: 0; background: transparent;
+    top: env(safe-area-inset-top); bottom: env(safe-area-inset-bottom); left: 0; right: 0;
+    width: 100%; height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  .cargando { position: fixed; inset: 0; display: grid; place-items: center; }
+</style>
+</head>
+<body>
+<div class="cargando">Cargando…</div>
+<iframe id="app" title="Gastos"></iframe>
+<script>
+  // Página "puente": muestra la app de Google Apps Script con su propio ícono.
+  // Guarda en este dispositivo quién eres y la clave, y se los pasa a la app al abrirla,
+  // así cada móvil recuerda a su persona aunque el navegador limite a la app de Google.
+  const APP = 'https://script.google.com/macros/s/AKfycbxFOVwHdLsdFCwqKoK183zWC6BSn5_JqkbGsw8CcWP7KaLjP69u6W7O41mm6w9v26hmXg/exec';
+
+  const guardado = {
+    get(k) { try { return localStorage.getItem('gastos.' + k) || ''; } catch (e) { return ''; } },
+    set(k, v) { try { localStorage.setItem('gastos.' + k, v); } catch (e) {} }
+  };
+
+  // ?yo=Antonia en el enlace fija la persona de este dispositivo.
+  const enlace = new URLSearchParams(location.search);
+  if (enlace.get('yo')) guardado.set('yo', enlace.get('yo'));
+
+  const params = new URLSearchParams();
+  if (guardado.get('yo')) params.set('yo', guardado.get('yo'));
+  if (guardado.get('clave')) params.set('k', guardado.get('clave'));
+  document.getElementById('app').src = APP + (params.toString() ? '?' + params : '');
+
+  // La app avisa cuando eliges persona o escribes la clave. Solo se aceptan avisos de la app de Google.
+  window.addEventListener('message', e => {
+    let host = '';
+    try { host = new URL(e.origin).hostname; } catch (err) { return; }
+    if (!host.endsWith('.googleusercontent.com')) return;
+    const d = e.data || {};
+    if (d.app !== 'gastos') return;
+    guardado.set('yo', d.yo || '');
+    guardado.set('clave', d.clave || '');
+  });
+</script>
+</body>
+</html>
